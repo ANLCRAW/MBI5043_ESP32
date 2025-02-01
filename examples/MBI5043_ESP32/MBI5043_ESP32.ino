@@ -31,7 +31,6 @@ void clear_data(void){
 
 void setup(void){
   Serial.begin(115200);
-  setCpuFrequencyMhz(40);
   clear_data();
 	MBI.spi_init();
 

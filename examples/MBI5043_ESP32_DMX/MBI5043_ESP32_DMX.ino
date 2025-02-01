@@ -3,9 +3,9 @@
 #include <esp_dmx.h>
 #include <rdm/responder.h>
 
-int transmitPin = 17;
-int receivePin = 16;
-int enablePin = 4;
+int transmitPin = 19;
+int receivePin = 18;
+int enablePin = 21;
 
 dmx_port_t dmxPort = 1;
 uint16_t DMXAddress = 1;
@@ -110,8 +110,6 @@ void loop(void)
 
   /* Now we will block until data is received.*/
   if (dmx_receive(dmxPort, &packet, DMX_TIMEOUT_TICK)) {
-    
-
     /* A packet was received! If the packet was RDM, we should send a response.
       We can do this with rdm_send_response(). If the RDM packet isn't meant for
       this device, no response will be sent. */
@@ -124,7 +122,7 @@ void loop(void)
       dmx_read(dmxPort, data, packet.size);
     }
     for(int i=0; i<TOTAL_NUM_PIXELS;i++){
-      pwm_data[pixelArray[i]] = data[DMXAddress+i]* BRIGHTNESS_STEPSIZE;
+      pwm_data[pixelArray[i]] = data[DMXAddress+i]* BRIGHTNESS_STEPSIZE/2;
     }
     MBI.update(pwm_data,TOTAL_NUM_CHIPS);
   }
