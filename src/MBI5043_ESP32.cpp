@@ -195,9 +195,9 @@ void MBI5043::update(uint16_t * pwm_data, uint8_t n)
 				spi_out_low();
 			}
 			pulse_spi_clk();
-			Serial.println(pwm_data_tmp,BIN);
+			//Serial.println(pwm_data_tmp,BIN);
 			spi_latch_low();	// "data-latch" END
-			Serial.println("UPDATE LATCH OFF");
+			//Serial.println("UPDATE LATCH OFF");
 			count++;
 	}
 
@@ -329,11 +329,11 @@ void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t
 
 	uint16_t current_gain_mask = (((uint16_t) (current_gain)) );
 	uint16_t config_data = (0x0000 | config_mask | current_gain_mask);
-	Serial.println();
-	Serial.print("Config_data: ");
-	Serial.print(config_data,BIN);
-	Serial.print(" -> 0x");
-	Serial.println(config_data,HEX);
+	//Serial.println();
+	//Serial.print("Config_data: ");
+	//Serial.print(config_data,BIN);
+	//Serial.print(" -> 0x");
+	//Serial.println(config_data,HEX);
 	uint8_t config_data_bit;
 	uint16_t config_data_tmp;
 
@@ -384,9 +384,7 @@ void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t
 		spi_out_low();
 	}
 	spi_clk_high();
-	//Serial.println(config_data_tmp,BIN);
 	spi_latch_low();
-	Serial.println("LATCH OFF");
 	spi_clk_low();
 	
 }

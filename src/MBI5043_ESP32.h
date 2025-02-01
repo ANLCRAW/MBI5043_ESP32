@@ -99,20 +99,10 @@ class MBI5043 {
 	void write_config(uint16_t config_mask, uint16_t current_gain, uint8_t n);
 
  private:
-	volatile uint8_t *_spi_out_DIR;
-	volatile uint8_t *_spi_out_PORT;
 	uint8_t _spi_out_pinmask;
-
-	volatile uint8_t *_spi_in_DIR;
 	volatile uint8_t *_spi_in_PIN;
 	uint8_t _spi_in_pinmask;
-
-	volatile uint8_t *_spi_clk_DIR;
-	volatile uint8_t *_spi_clk_PORT;
 	uint8_t _spi_clk_pinmask;
-
-	volatile uint8_t *_spi_latch_DIR;
-	volatile uint8_t *_spi_latch_PORT;
 	uint8_t _spi_latch_pinmask;
 
 	uint8_t _spi_out_pin;
