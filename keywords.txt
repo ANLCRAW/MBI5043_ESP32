@@ -6,28 +6,54 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-#######################################
-# Methods and Functions (KEYWORD2)
-#######################################
-
-#######################################
-# Syntax Coloring Map For MenuObject
-#######################################
-
-#######################################
-# Datatypes (KEYWORD1)
-#######################################
-
-#######################################
-# Constants (LITERAL1)
-#######################################
+MBI5043		KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
+spi_init	KEYWORD2
+update		KEYWORD2
+read_config	KEYWORD2
+write_config	KEYWORD2
+setupGCLK	KEYWORD2
+read_register	KEYWORD2
+prepare_config_read	KEYWORD2
+
 #######################################
-# Variables (KEYWORD2)
+# Constants (KEYWORD3)
 #######################################
+
+GCLK_SHIFT_0	KEYWORD3
+GCLK_SHIFT_2	KEYWORD3
+GCLK_SHIFT_4	KEYWORD3
+GCLK_SHIFT_8	KEYWORD3
+PWM_16BIT	KEYWORD3
+PWM_12BIT	KEYWORD3
+PWM_MODE_1	KEYWORD3
+PWM_MODE_2	KEYWORD3
+PWM_MODE_3	KEYWORD3
+PWM_MODE_4	KEYWORD3
+CURRENT_GAIN_AJUST_100	KEYWORD3
+CURRENT_GAIN_AJUST_12	KEYWORD3
+CURRENT_GAIN_AJUST_200	KEYWORD3
+SHIFT_COMPENSATION_A_OFF	KEYWORD3
+SHIFT_COMPENSATION_A_MODE1	KEYWORD3
+SHIFT_COMPENSATION_A_MODE2	KEYWORD3
+SHIFT_COMPENSATION_A_MODE3	KEYWORD3
+SHIFT_COMPENSATION_B_OFF	KEYWORD3
+SHIFT_COMPENSATION_B_MODE1	KEYWORD3
+SHIFT_COMPENSATION_B_MODE2	KEYWORD3
+SHIFT_COMPENSATION_B_MODE3	KEYWORD3
+EDGE_TRIGGER_ON	KEYWORD3
+EDGE_TRIGGER_OFF	KEYWORD3
+CHIP_DISABLE	KEYWORD3
+CHIP_ENABLE	KEYWORD3
+
+
+
+
+
+
 
 
