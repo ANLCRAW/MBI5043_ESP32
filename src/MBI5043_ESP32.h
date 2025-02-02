@@ -23,6 +23,10 @@
 #define _MBI5043_H_
 
 
+// GCLK Clock Speed
+#define GCLK_CLOCK_33MHZ 1 // 33Mhz
+#define GCLK_CLOCK_16_5MHZ 2 // 16.5Mhz
+
 
 // MBI5030 configuration regiter options
 // First line of each #define-block: default value
@@ -53,7 +57,7 @@
 // Register bit: 9~4
 // - UNTESTED -
 #define CURRENT_GAIN_AJUST_100  0x2B0
-#define CURRENT_GAIN_AJUST_12   0x0000
+#define CURRENT_GAIN_AJUST_12   0x000
 #define CURRENT_GAIN_AJUST_200  0x3F0
 
 
@@ -100,8 +104,7 @@ class MBI5043 {
 
  private:
 	uint8_t _spi_out_pinmask;
-	volatile uint8_t *_spi_in_PIN;
-	uint8_t _spi_in_pinmask;
+	uint8_t _spi_in_PIN;
 	uint8_t _spi_clk_pinmask;
 	uint8_t _spi_latch_pinmask;
 
@@ -118,7 +121,7 @@ class MBI5043 {
 	inline void spi_latch_high(void) __attribute__ ((always_inline));
 	inline void spi_latch_low(void) __attribute__ ((always_inline));
 	inline void pulse_spi_clk(void) __attribute__ ((always_inline));
-	void setupGCLK(void);
+	void setupGCLK(uint8_t freq);
 
 	uint16_t read_register(void);
 	void prepare_config_read(void);

@@ -30,12 +30,12 @@
 MBI5043::MBI5043(uint8_t spi_out_pin, uint8_t spi_in_pin, uint8_t spi_clk_pin, uint8_t spi_latch_pin, uint8_t gclk_pin)
 {
     _spi_out_pin = spi_out_pin;
-    _spi_in_pin = spi_in_pin;
+	_spi_in_PIN = spi_in_pin;
     _spi_clk_pin = spi_clk_pin;
     _spi_latch_pin = spi_latch_pin;
 	
 	_gclk_pin = gclk_pin;
-	setupGCLK();
+	setupGCLK(GCLK_CLOCK_33MHZ);
 
 	/*
     // Stel GPIO pin-modi in
@@ -58,10 +58,10 @@ MBI5043::MBI5043(uint8_t spi_out_pin, uint8_t spi_in_pin, uint8_t spi_clk_pin, u
     pinMode(_spi_clk_pin, OUTPUT);
     pinMode(_spi_latch_pin, OUTPUT);
 
-	pinMode(_spi_in_pin, INPUT_PULLUP);
+	pinMode(_spi_in_PIN, INPUT_PULLUP);
 }
 
-void MBI5043::setupGCLK(void) {
+void MBI5043::setupGCLK(uint8_t clk_speed) {
     rmt_config_t rmt_tx;
     rmt_tx.rmt_mode = RMT_MODE_TX;
     rmt_tx.channel = RMT_CHANNEL_0;
@@ -77,9 +77,9 @@ void MBI5043::setupGCLK(void) {
     rmt_driver_install(RMT_CHANNEL_0, 0, 0);
 
     rmt_item32_t items[1];
-    items[0].duration0 = 1;  // Adjust for 33MHz
+    items[0].duration0 = clk_speed;  // Adjust for 33MHz
     items[0].level0 = 1;
-    items[0].duration1 = 1;
+    items[0].duration1 = clk_speed;
     items[0].level1 = 0;
 
     rmt_write_items(RMT_CHANNEL_0, items, 1, true);
@@ -270,30 +270,27 @@ void MBI5043::update(uint16_t * pwm_data, uint8_t n)
 
 uint16_t MBI5043::read_register(void)
 {
-	uint16_t register_status = 0;
-	uint8_t register_status_bit;
+    uint16_t register_status = 0;
 
-	// read bits 0-14
-	for (register_status_bit = 0; register_status_bit <= 14;
-	     register_status_bit++) {
-		if (*_spi_in_PIN & _spi_in_pinmask) {
-			register_status |= _BV(0);
-		} else {
-			// already full with zeros
-		}
-		pulse_spi_clk();
+    for (uint8_t register_status_bit = 0; register_status_bit < 15; register_status_bit++) {
 		register_status <<= 1;
-	}
 
-	// read bit 15
-	if (*_spi_in_PIN & _spi_in_pinmask) {
-		register_status |= _BV(0);
-	} else {
-		// already full with zeros
-	}
+    	if (digitalRead(_spi_in_PIN)) {
+            register_status |= 1;
+        }
+		
+        pulse_spi_clk();
+        
+    }
 
-	return register_status;
+	register_status <<= 1;
+    // Read bit 15
+    if (digitalRead(_spi_in_PIN)) {
+        register_status |= 1;
+    }
+    return register_status;
 }
+
 
 void MBI5043::prepare_config_read(void)
 {
@@ -326,65 +323,162 @@ uint16_t MBI5043::read_config(void)
 
 void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t n) // n is no. of chips
 {
+	uint16_t current_gain_mask = (((uint16_t) (current_gain)));
+	uint16_t config_data = (0x0000 | config_mask | current_gain_mask);
+	uint8_t config_data_bit;
 
+	Serial.println();
+	Serial.print("current_gain_mask: ");
+	Serial.print(current_gain_mask,BIN);
+	Serial.print(" -> 0x");
+	Serial.println(current_gain_mask,HEX);
+
+	Serial.print("current_gain: ");
+	Serial.print(current_gain,BIN);
+	Serial.print(" -> 0x");
+	Serial.println(current_gain,HEX);
+
+	Serial.print("config_data: ");
+	Serial.print(config_data,BIN);
+	Serial.print(" -> 0x");
+	Serial.println(config_data,HEX);
+
+	
+	// send first 5 bits
+	for (config_data_bit = 0; config_data_bit <= 4; config_data_bit++) {
+		if (config_data & _BV(15)) {
+			spi_out_high();
+		} else {
+			spi_out_low();
+		}
+		pulse_spi_clk();
+			Serial.print(" -> config_data: ");
+			Serial.print(config_data,BIN);
+			Serial.print(" -> State: ");
+			Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
+		config_data <<= 1;
+	}
+
+	spi_latch_high();
+	
+	// send bits 5..14
+	for (config_data_bit = 5; config_data_bit <= 14; config_data_bit++) {
+		if (config_data & _BV(15)) {
+			spi_out_high();
+		} else {
+			spi_out_low();
+		}
+		pulse_spi_clk();
+			Serial.print(" -> config_data: ");
+			Serial.print(config_data,BIN);
+			Serial.print(" -> State: ");
+			Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
+		config_data <<= 1;
+	}
+
+	// send last bit
+	if (config_data & _BV(15)) {
+		spi_out_high();
+	} else {
+		spi_out_low();
+	}
+		Serial.print(" -> config_data: ");
+		Serial.print(config_data,BIN);
+		Serial.print(" -> State: ");
+		Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
+	spi_clk_high();
+	spi_latch_low();
+	spi_clk_low();
+}
+/*
+	Serial.println();
+	Serial.print("config_mask: ");
+	Serial.print(config_mask,BIN);
+	Serial.print(" -> 0x");
+	Serial.println(config_mask,HEX);
+
+	Serial.print("current_gain: ");
+	Serial.print(current_gain,BIN);
+	Serial.print(" -> 0x");
+	Serial.println(current_gain,HEX);
+
+	
 	uint16_t current_gain_mask = (((uint16_t) (current_gain)) );
 	uint16_t config_data = (0x0000 | config_mask | current_gain_mask);
-	//Serial.println();
-	//Serial.print("Config_data: ");
-	//Serial.print(config_data,BIN);
-	//Serial.print(" -> 0x");
-	//Serial.println(config_data,HEX);
 	uint8_t config_data_bit;
 	uint16_t config_data_tmp;
+	Serial.print("config_data: ");
+	Serial.print(config_data,BIN);
+	Serial.print(" -> 0x");
+	Serial.println(config_data,HEX);
 
-	for(int i=1; i<=n-1 ; i++){
+	for(int i=0; i<=n-1 ; i++){
+		
 		config_data_tmp = config_data;	
 		for (config_data_bit = 0; config_data_bit < 16; config_data_bit++) {
-			if (config_data_tmp & _BV(15)) {
+			
+			if (config_data_tmp & _BV(15 - config_data_bit)) {
 				spi_out_high();
 			} else {
 				spi_out_low();
 			}
 			pulse_spi_clk();
-			//Serial.println(config_data_tmp,BIN);
+				Serial.print("Puls: ");
+				Serial.print(((i)*16)+config_data_bit);
+				Serial.print(" -> Config_data_tmp: ");
+				Serial.println(config_data_tmp,BIN);
 			config_data_tmp <<= 1;
 		}
-	}
-
+		
+	
+		
 	// send first 5 bits
 	config_data_tmp = config_data;
-	for (config_data_bit = 0; config_data_bit <= 4; config_data_bit++) {
-		if (config_data_tmp & _BV(15)) {
+	for (config_data_bit = 0; config_data_bit < 5; config_data_bit++) {
+		if (config_data_tmp & _BV(15 - config_data_bit)) {
 			spi_out_high();
 		} else {
 			spi_out_low();
 		}
 		pulse_spi_clk();
-		//Serial.println(config_data_tmp,BIN);
+			Serial.print("5x Puls: ");
+			Serial.print(config_data_bit);
+			Serial.print(" -> Config_data_tmp: ");
+			Serial.println(config_data_tmp,BIN);
 		config_data_tmp <<= 1;
 	}
-	//Serial.println("LATCH");
+	Serial.println("LATCH HIGH");
 	spi_latch_high();
 	// send bits 5..14
-	for (config_data_bit = 5; config_data_bit <= 14; config_data_bit++) {
-		if (config_data_tmp & _BV(15)) {
+	for (config_data_bit = 5; config_data_bit < 15; config_data_bit++) {
+		if (config_data_tmp & _BV(15 - config_data_bit)) {
 			spi_out_high();
 		} else {
 			spi_out_low();
 		}
 		pulse_spi_clk();
-		//Serial.println(config_data_tmp,BIN);
+			Serial.print("10x Puls: ");
+			Serial.print(config_data_bit);
+			Serial.print(" -> Config_data_tmp: ");
+			Serial.println(config_data_tmp,BIN);
 		config_data_tmp <<= 1;
 	}
 
 	// send last bit
-	if (config_data_tmp & _BV(15)) {
+	if (config_data_tmp & _BV(0)) {
 		spi_out_high();
 	} else {
 		spi_out_low();
 	}
+		Serial.print("1x Puls: 15");
+		Serial.print(" -> Config_data_tmp: ");
+		Serial.println(config_data_tmp,BIN);
 	spi_clk_high();
+		Serial.println("CLK HIGH");
 	spi_latch_low();
+		Serial.println("LATCH LOW");
 	spi_clk_low();
-	
+		Serial.println("CLK LOW");
 }
+}
+*/
