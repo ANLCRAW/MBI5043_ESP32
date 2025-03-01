@@ -140,7 +140,7 @@ inline void MBI5043::pulse_spi_clk(void)
 }
 
 
-void MBI5043::update(uint16_t * pwm_data, uint8_t n)
+void MBI5043::update(uint32_t* pwm_data, uint8_t n)
 {
 	uint8_t data_word;
 	uint8_t data_word_bit;
@@ -327,6 +327,7 @@ void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t
 	uint16_t config_data = (0x0000 | config_mask | current_gain_mask);
 	uint8_t config_data_bit;
 
+	/*
 	Serial.println();
 	Serial.print("current_gain_mask: ");
 	Serial.print(current_gain_mask,BIN);
@@ -342,7 +343,7 @@ void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t
 	Serial.print(config_data,BIN);
 	Serial.print(" -> 0x");
 	Serial.println(config_data,HEX);
-
+	*/
 	
 	// send first 5 bits
 	for (config_data_bit = 0; config_data_bit <= 4; config_data_bit++) {
@@ -352,10 +353,10 @@ void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t
 			spi_out_low();
 		}
 		pulse_spi_clk();
-			Serial.print(" -> config_data: ");
-			Serial.print(config_data,BIN);
-			Serial.print(" -> State: ");
-			Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
+		//	Serial.print(" -> config_data: ");
+		//	Serial.print(config_data,BIN);
+		//	Serial.print(" -> State: ");
+		//	Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
 		config_data <<= 1;
 	}
 
@@ -369,10 +370,10 @@ void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t
 			spi_out_low();
 		}
 		pulse_spi_clk();
-			Serial.print(" -> config_data: ");
-			Serial.print(config_data,BIN);
-			Serial.print(" -> State: ");
-			Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
+		//	Serial.print(" -> config_data: ");
+		//	Serial.print(config_data,BIN);
+		//	Serial.print(" -> State: ");
+		//	Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
 		config_data <<= 1;
 	}
 
@@ -382,10 +383,10 @@ void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain , uint8_t
 	} else {
 		spi_out_low();
 	}
-		Serial.print(" -> config_data: ");
-		Serial.print(config_data,BIN);
-		Serial.print(" -> State: ");
-		Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
+	//	Serial.print(" -> config_data: ");
+	//	Serial.print(config_data,BIN);
+	//	Serial.print(" -> State: ");
+	//	Serial.println(config_data & _BV(15) ? "HIGH" : "LOW");
 	spi_clk_high();
 	spi_latch_low();
 	spi_clk_low();
