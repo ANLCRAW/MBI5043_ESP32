@@ -115,7 +115,7 @@ inline void MBI5043::spi_latch_low(void)
 inline void MBI5043::pulse_spi_clk(void)
 {
     digitalWrite(_spi_clk_pin, 1);
-	delayMicroseconds(1);
+	//delayMicroseconds(1); // removed to handle RDM @160Mhz. Works!
     digitalWrite(_spi_clk_pin, 0);
 }
 

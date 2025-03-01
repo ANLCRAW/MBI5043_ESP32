@@ -16,7 +16,7 @@
 
 MBI5043 MBI(18, 27, 32, 33, 5); // spi_out (SDI), spi_in (SDO), spi_clk (DCLK), spi_latch (LE), GCLK pin --- cant use pin 35&34 for SDI&GCLK ---
 
-uint32_t pwm_data[48]; //NUM_CHIPS*16 = 2*16 =32
+uint32_t pwm_data[TOTAL_NUM_PIXELS]; //NUM_CHIPS*16 = 2*16 =32
 
 //Pixel order (for now 48 pixels)
 uint8_t pixelArray[] = {3,0,6,12,9,15,21,18,24,30,27,33,39,36,42,1,45,4,10,7,13,19,16,22,28,25,31,37,34,40,46,43,2,8,5,11,17,14,20,26,23,29,35,32,38,44,41,47};
