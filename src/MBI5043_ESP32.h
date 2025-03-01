@@ -36,9 +36,9 @@
 // Current gain adjustment (read/write)
 // Register bit: 9~4
 // - UNTESTED -
-#define CURRENT_GAIN_AJUST_100  0x2B0
-#define CURRENT_GAIN_AJUST_12   0x000
-#define CURRENT_GAIN_AJUST_200  0x3F0
+#define CURRENT_GAIN_ADJUST_100  0x2B0
+#define CURRENT_GAIN_ADJUST_12   0x000
+#define CURRENT_GAIN_ADJUST_200  0x3F0
 
 
 // Color shift compensation [A] (read/write)
