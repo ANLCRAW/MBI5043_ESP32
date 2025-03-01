@@ -1,23 +1,3 @@
-//
-// To get a suitably high GSCLK frequency, the CLKO-FUSE of the ATMega168/328 has been programmed
-// It will output it's system clock on PB0 ("digital pin" #8)
-//
-// THIS REQUIRES AN ISP PROGRAMMER (or 2nd Arduino loaded with Arduino-ISP)
-//
-// Diecimila + ATmega168: lfuse: 0xBF
-//                        hfuse: 0xDD
-//                        efuse: 0x00 (or 0xF8)
-//
-// Uno + ATmega328:       lfuse: 0xBF
-//                        hfuse: 0xDE
-//                        efuse: 0x05 (or 0xFD)
-//                        
-// To revert to Arduino's default FUSE settings, change 0xBF to 0xFF.
-//
-// Use: "http://www.engbedded.com/fusecalc" and ".../arduino-XXX/hardware/arduino/boards.txt"
-//
-// Make sure to get the latest MBI5043 datasheet (at least version Jan. 2009)!
-// 
 
 #include <stdint.h>
 #include <Arduino.h>
