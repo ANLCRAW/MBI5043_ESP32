@@ -4,8 +4,11 @@
 
 
 // GCLK Clock Speed
-#define GCLK_CLOCK_33MHZ 1 // 33Mhz
-#define GCLK_CLOCK_16_5MHZ 2 // 16.5Mhz
+enum GCLK_Speed {
+    GCLK_10MHZ,
+    GCLK_20MHZ,
+    GCLK_40MHZ
+};
 
 
 // MBI5030 configuration regiter options
@@ -69,42 +72,35 @@
 #define CHIP_DISABLE  0x0000
 #define CHIP_ENABLE   0x0001
 
-extern "C" {
-#include <stdint.h>
-}
+#include <Arduino.h>
+#include <driver/rmt.h>
 
 class MBI5043 {
- public:
-	MBI5043(uint8_t spi_out_pin, uint8_t spi_in_pin, uint8_t spi_clk_pin,
-		uint8_t spi_latch_pin, uint8_t gclk_pin);
-	void spi_init(void);
-	void update(uint32_t* pwm_data, uint8_t n);
-	uint16_t read_config(void);
-	void write_config(uint16_t config_mask, uint16_t current_gain, uint8_t n);
+public:
+	MBI5043(uint8_t spi_in_pin, uint8_t spi_clk_pin, uint8_t spi_latch_pin, uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_out_pin2=255);
 
- private:
-	uint8_t _spi_out_pinmask;
-	uint8_t _spi_in_PIN;
-	uint8_t _spi_clk_pinmask;
-	uint8_t _spi_latch_pinmask;
+	void spi_init();
+    void setupGCLK(enum GCLK_Speed);
+    void update(uint16_t* pwm_data1, uint16_t* pwm_data2, uint8_t num_chips);
+    void write_config(uint16_t config_mask, uint16_t current_gain, uint8_t num_chips);
+    uint16_t read_config();
 
-	uint8_t _spi_out_pin;
-	uint8_t _spi_in_pin;
-	uint8_t _spi_clk_pin;
-	uint8_t _spi_latch_pin;
-	uint8_t _gclk_pin;
+private:
+    uint8_t _spi_in_pin, _spi_out_pin, _spi_out2_pin, _spi_clk_pin, _spi_latch_pin, _gclk_pin;
 
-	inline void spi_clk_high(void) __attribute__ ((always_inline));
-	inline void spi_clk_low(void) __attribute__ ((always_inline));
-	inline void spi_out_high(void) __attribute__ ((always_inline));
-	inline void spi_out_low(void) __attribute__ ((always_inline));
-	inline void spi_latch_high(void) __attribute__ ((always_inline));
-	inline void spi_latch_low(void) __attribute__ ((always_inline));
-	inline void pulse_spi_clk(void) __attribute__ ((always_inline));
-	void setupGCLK(uint8_t freq);
+    inline void spi_clk_high();
+    inline void spi_clk_low();
+    inline void spi_latch_high();
+    inline void spi_latch_low();
+    inline void spi_out_high();
+    inline void spi_out_low();
+    inline void spi_out2_high();
+    inline void spi_out2_low();
+    inline void pulse_spi_clk();
+    inline void write_dual_data(bool bit1, bool bit2);
 
-	uint16_t read_register(void);
-	void prepare_config_read(void);
+    uint16_t read_register();
+    void prepare_config_read();
 };
 
 #endif
