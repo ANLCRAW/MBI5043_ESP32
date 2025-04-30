@@ -1,4 +1,4 @@
-# MBI5043_ESP32
+# MBI5043_ESP32 v1.0.3
  
  More information is comming soon!
 
