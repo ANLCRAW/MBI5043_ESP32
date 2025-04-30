@@ -31,8 +31,8 @@ MBI5043::MBI5043(uint8_t spi_in_pin, uint8_t spi_clk_pin, uint8_t spi_latch_pin,
 
 void MBI5043::spi_init()
 {
-    gpio_set_drive_capability(GPIO_NUM_18, GPIO_DRIVE_CAP_2); // Highest (0–3)
-    gpio_set_drive_capability(GPIO_NUM_27, GPIO_DRIVE_CAP_3); // Highest (0–3)
+    //gpio_set_drive_capability(GPIO_NUM_18, GPIO_DRIVE_CAP_2); // Highest (0–3)
+    //gpio_set_drive_capability(GPIO_NUM_27, GPIO_DRIVE_CAP_3); // Highest (0–3)
     ////gpio_set_drive_capability(GPIO_NUM_5, GPIO_DRIVE_CAP_1); // Highest (0–3)
     //gpio_set_drive_capability(GPIO_NUM_32, GPIO_DRIVE_CAP_1); // Highest (0–3)
     //gpio_set_drive_capability(GPIO_NUM_33, GPIO_DRIVE_CAP_1); // Highest (0–3)
