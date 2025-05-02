@@ -2,6 +2,10 @@
  
  More information is comming soon!
 
+# HOW-TO-USE
+
+* 
+
 # TO-DO-LIST
 
-* bug: write to BMI5043 registry failt!
+* 
