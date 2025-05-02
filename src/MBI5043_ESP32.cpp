@@ -175,7 +175,6 @@ uint16_t MBI5043::get_preloaded_config(){
     return _config_data;
 }
 
-//correct
 uint16_t MBI5043::read_register()
 {
     uint16_t reg = 0;
@@ -187,7 +186,6 @@ uint16_t MBI5043::read_register()
     return reg;
 }
 
-//correct
 void MBI5043::prepare_config_read()
 {
     for (int i = 0; i < 11; i++) pulse_spi_clk();
