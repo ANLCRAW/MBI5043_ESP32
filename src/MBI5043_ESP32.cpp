@@ -5,8 +5,6 @@
 #include "driver/gpio.h"
 #include "esp32/rom/gpio.h"
 
-#include "Arduino.h"
-
 MBI5043::MBI5043(uint8_t spi_in_pin, uint8_t spi_clk_pin, uint8_t spi_latch_pin,
                  uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_out2_pin)
 {
@@ -26,16 +24,12 @@ MBI5043::MBI5043(uint8_t spi_in_pin, uint8_t spi_clk_pin, uint8_t spi_latch_pin,
     gpio_set_direction((gpio_num_t)_spi_in_pin, GPIO_MODE_INPUT);
     gpio_set_pull_mode((gpio_num_t)_spi_in_pin, GPIO_PULLUP_ONLY);
 
-    setupGCLK(GCLK_40MHZ);
 }
 
-void MBI5043::spi_init()
+void MBI5043::spi_init(uint8_t delay_us)
 {
-    //gpio_set_drive_capability(GPIO_NUM_18, GPIO_DRIVE_CAP_2); // Highest (0–3)
-    //gpio_set_drive_capability(GPIO_NUM_27, GPIO_DRIVE_CAP_3); // Highest (0–3)
-    ////gpio_set_drive_capability(GPIO_NUM_5, GPIO_DRIVE_CAP_1); // Highest (0–3)
-    //gpio_set_drive_capability(GPIO_NUM_32, GPIO_DRIVE_CAP_1); // Highest (0–3)
-    //gpio_set_drive_capability(GPIO_NUM_33, GPIO_DRIVE_CAP_1); // Highest (0–3)
+    _spi_delay_us = delay_us;
+
     gpio_output_clear(_spi_out_pin);
     if (_spi_out2_pin != 255) gpio_output_clear(_spi_out2_pin);
     gpio_output_clear(_spi_clk_pin);
@@ -85,14 +79,14 @@ void MBI5043::gpio_output_clear(uint8_t pin)
     else
         GPIO.out1_w1tc.val = (1UL << (pin - 32));
 }
-#define SPI_DELAY_US 2
+
 
 void MBI5043::pulse_spi_clk()
 {
     gpio_output_set(_spi_clk_pin);
-    if (SPI_DELAY_US > 0) delayMicroseconds(SPI_DELAY_US);
+    if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us);
     gpio_output_clear(_spi_clk_pin);
-    if (SPI_DELAY_US > 0) delayMicroseconds(SPI_DELAY_US);
+    if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us);
 }
 
 void MBI5043::write_dual_data(bool bit1, bool bit2)
@@ -101,10 +95,10 @@ void MBI5043::write_dual_data(bool bit1, bool bit2)
     if (_spi_out2_pin != 255)
         if (bit2) gpio_output_set(_spi_out2_pin); else gpio_output_clear(_spi_out2_pin);
 
-    if (SPI_DELAY_US > 0) delayMicroseconds(SPI_DELAY_US/2);
+    if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us/2);
 }
 
-void MBI5043::update(uint16_t* pwm_data1, uint16_t* pwm_data2, uint8_t num_chips)
+void MBI5043::update(uint8_t num_chips, uint16_t* pwm_data1, uint16_t* pwm_data2)
 {
     if (!pwm_data1 || num_chips == 0) return;
 
@@ -129,37 +123,71 @@ void MBI5043::update(uint16_t* pwm_data1, uint16_t* pwm_data2, uint8_t num_chips
     }
 
     gpio_output_set(_spi_latch_pin);
-    if (SPI_DELAY_US > 0) delayMicroseconds(SPI_DELAY_US);
+    if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us);
     write_dual_data(0, 0); pulse_spi_clk();
     write_dual_data(0, 0); pulse_spi_clk();
     gpio_output_clear(_spi_latch_pin);
 }
 
-void MBI5043::write_config(uint16_t config_mask, uint16_t current_gain, uint8_t num_chips)
+
+void MBI5043::write_register()
 {
-    uint16_t config_data = config_mask | current_gain;
-    for (uint8_t i = 0; i < num_chips; i++) {
+    // Shift out data for each chip (start with furthest)
+    for (int8_t chip = _num_chips - 1; chip >= 0; chip--) {
         for (int8_t bit = 15; bit >= 0; bit--) {
-            (config_data & (1 << bit)) ? gpio_output_set(_spi_out_pin) : gpio_output_clear(_spi_out_pin);
+            if (chip == 0 && bit == 10) {
+                // LE goes HIGH before final 11 bits of last chip
+                gpio_output_set(_spi_latch_pin);
+            }
+
+            if (_config_data & (1 << bit))
+                gpio_output_set(_stripPinNr);
+            else
+                gpio_output_clear(_stripPinNr);
+
             pulse_spi_clk();
         }
-    }
-    gpio_output_set(_spi_latch_pin);
-    pulse_spi_clk();
+    // LE LOW after all bits sent
     gpio_output_clear(_spi_latch_pin);
+    }
 }
 
+void MBI5043::prepare_config_write()
+{   
+    pulse_spi_clk();
+    gpio_output_set(_spi_latch_pin);
+    for (int i = 0; i < 15; i++) pulse_spi_clk();
+    gpio_output_clear(_spi_latch_pin);
+   
+}
+
+void MBI5043::write_config(uint16_t config_data, uint8_t stripPinNr, uint8_t num_chips)
+{
+    _config_data = config_data;
+    _stripPinNr = stripPinNr;
+    _num_chips = num_chips;
+
+    prepare_config_write();
+    write_register();
+}
+
+uint16_t MBI5043::get_preloaded_config(){
+    return _config_data;
+}
+
+//correct
 uint16_t MBI5043::read_register()
 {
     uint16_t reg = 0;
     for (uint8_t i = 0; i < 16; i++) {
         reg <<= 1;
-        if (gpio_get_level((gpio_num_t)_spi_out_pin)) reg |= 1;
+        if (gpio_get_level((gpio_num_t)_spi_in_pin)) reg |= 1;
         pulse_spi_clk();
     }
     return reg;
 }
 
+//correct
 void MBI5043::prepare_config_read()
 {
     for (int i = 0; i < 11; i++) pulse_spi_clk();

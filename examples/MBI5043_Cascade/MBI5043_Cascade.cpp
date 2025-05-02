@@ -17,9 +17,15 @@
 #define FADE_DELAY 20
 #define CHASE_SPEED 5         // Lower = faster
 #define RAINBOW_LENGTH 96     // Number of colors in the rainbow wheel
-#define MAX_BRIGHTNESS 0xffff/2
 
-MBI5043 MBI(27, 32, 33, 5, 18, 22); // spi_in (SDO), spi_clk (DCLK), spi_latch (LE), GCLK pin, spi_out (SDI)
+#define SDO 27
+#define DCLK 32
+#define LE 33
+#define GCLK 5
+#define STRIP_1 18
+#define STRIP_2 22
+
+MBI5043 MBI(SDO, DCLK, LE, GCLK, STRIP_1); // MBI pin nr's
 
 uint16_t pwm_data1[NUM_PIXELS_PER_STRIP]; //NUM_CHIPS*16 = 2*16 =32 * NUM_COLORS = 96
 uint16_t pwm_data2[NUM_PIXELS_PER_STRIP]; //NUM_CHIPS*16 = 2*16 =32 * NUM_COLORS = 96
@@ -32,6 +38,7 @@ void clear_data(void){
   	memset(pwm_data2, 0x00, sizeof(pwm_data2));
 }
 
+
 void full_data(void){
 	memset(pwm_data1, 0xff, sizeof(pwm_data1));
   	memset(pwm_data2, 0xff, sizeof(pwm_data2));
@@ -39,21 +46,18 @@ void full_data(void){
 
 
 void setup(void){
-  clear_data(); // Turn all the led's off
-  MBI.spi_init(); // Initialize MBI5043
+	Serial.begin(115200);
 
-	//
-	// The current-set resistor 'R-EXT' of the MBI5043 should be chosen such
-	// that the maximum current is only reached if the digital current gain
-	// is set to '2'. That way the chip should always operate within specs.
-	// 
-	// The chip starts up with a gain setting of '1', which means only half
-	// of the maximum current is available. Next we'll change the configuration
-	// register to get a gain of '2' for full brightness.
-	//
-  MBI.write_config(0x0000, CURRENT_GAIN_ADJUST_200, TOTAL_NUM_CHIPS);	// 1st number: blank configuration bits (see header file of lib), 2nd number: current gain
+	MBI.spi_init(); // Initialize MBI5043
+	MBI.setupGCLK(GCLK_40MHZ); // Set GCLK speed
+
+	clear_data();
+	MBI.update(NUM_CHIPS_PER_STRIP, pwm_data1, pwm_data2); // Send pwm_data to MBI5043
+
+	MBI.write_config(GCLK_SHIFT_0 | CURRENT_GAIN_ADJUST_100, STRIP_2, NUM_CHIPS_PER_STRIP);	// (see header file of lib), 1st number: GCLK_SHIFT_0 | 2nd number: current gain
+	delay(5000);
+	Serial.printf("register: 0x%04x\n",MBI.read_config());
 }
-
 
 
 void colorTest(){
@@ -65,12 +69,13 @@ void colorTest(){
 				pwm_data2[pixelArray2[i-NUM_PIXELS_PER_STRIP]] = BRIGHTNESS_MAX; // Set value pwm_data
 				//Serial.printf("pixelArray = %i\npwm_data2 = %i\n", i-NUM_PIXELS_PER_STRIP, pixelArray2[i-NUM_PIXELS_PER_STRIP]);
 			}
-			MBI.update(pwm_data1, pwm_data2,  NUM_CHIPS_PER_STRIP); // Send pwm_data to MBI5043
+			MBI.update(NUM_CHIPS_PER_STRIP, pwm_data1, pwm_data2); // Send pwm_data to MBI5043
 			delay(100); // Wait for 500ms for the next color
 			clear_data(); // Turn all the led's off
 		}
 	}
 }
+
 
 void fullTest(){
 	for(int i=0; i<TOTAL_NUM_PIXELS;i++){
@@ -78,33 +83,36 @@ void fullTest(){
 			pwm_data1[pixelArray1[i]] = {0xffff};  // Full brightness
 		} else{
 			pwm_data2[pixelArray2[i-NUM_PIXELS_PER_STRIP]] = {0xffff};  // Full brightness
-			//Serial.printf("pixelArray = %i\npwm_data2 = %i\n", i-NUM_PIXELS_PER_STRIP, pixelArray2[i-NUM_PIXELS_PER_STRIP]);
 		}
 	}
-	MBI.update(pwm_data1, pwm_data2, NUM_CHIPS_PER_STRIP); // 3 chips
-	delay(15000);
+	MBI.update(NUM_CHIPS_PER_STRIP, pwm_data1, pwm_data2); // Send pwm_data to MBI5043
+	delay(5000);
 	clear_data();
+	MBI.update(NUM_CHIPS_PER_STRIP, pwm_data1, pwm_data2); // Send pwm_data to MBI5043
+	delay(5000);
 }
+
 
 uint16_t getRainbowChannel(uint8_t pos, char channel) {
 	pos %= 256;
 	switch (channel) {
 	  case 'r':
-		if (pos < 85) return (pos * 3 * MAX_BRIGHTNESS) / 255;
-		if (pos < 170) return ((255 - (pos - 85) * 3) * MAX_BRIGHTNESS) / 255;
+		if (pos < 85) return (pos * 3 * BRIGHTNESS_MAX) / 255;
+		if (pos < 170) return ((255 - (pos - 85) * 3) * BRIGHTNESS_MAX) / 255;
 		return 0;
 	  case 'g':
-		if (pos < 85) return ((255 - pos * 3) * MAX_BRIGHTNESS) / 255;
+		if (pos < 85) return ((255 - pos * 3) * BRIGHTNESS_MAX) / 255;
 		if (pos < 170) return 0;
-		return ((pos - 170) * 3 * MAX_BRIGHTNESS) / 255;
+		return ((pos - 170) * 3 * BRIGHTNESS_MAX) / 255;
 	  case 'b':
 		if (pos < 85) return 0;
-		if (pos < 170) return ((pos - 85) * 3 * MAX_BRIGHTNESS) / 255;
-		return ((255 - (pos - 170) * 3) * MAX_BRIGHTNESS) / 255;
+		if (pos < 170) return ((pos - 85) * 3 * BRIGHTNESS_MAX) / 255;
+		return ((255 - (pos - 170) * 3) * BRIGHTNESS_MAX) / 255;
 	}
 	return 0;
   }
   
+
   void rainbowChase() {
 	static uint8_t phase = 0;
   
@@ -127,15 +135,14 @@ uint16_t getRainbowChannel(uint8_t pos, char channel) {
 	  }
 	}
   
-	MBI.update(pwm_data1, pwm_data2, NUM_CHIPS_PER_STRIP);
+	MBI.update(NUM_CHIPS_PER_STRIP, pwm_data1, pwm_data2); // Send pwm_data to MBI5043
 	delay(FADE_DELAY);
 	phase = (phase + CHASE_SPEED) % 256;
   }
 
-  void loop(void)
-{
-	//colorTest();
+
+  void loop(void){
+	colorTest();
 	//fullTest();
-	rainbowChase();
-		
-}
+	//rainbowChase();
+  }
