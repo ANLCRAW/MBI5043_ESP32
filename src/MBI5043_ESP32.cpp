@@ -5,18 +5,16 @@
 #include "driver/gpio.h"
 #include "esp32/rom/gpio.h"
 
-MBI5043::MBI5043(uint8_t spi_in_pin, uint8_t spi_clk_pin, uint8_t spi_latch_pin,
-                 uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_out2_pin)
+MBI5043::MBI5043(uint8_t spi_clk_pin, uint8_t spi_latch_pin,
+                 uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_in_pin)
 {
     _spi_in_pin = spi_in_pin;
     _spi_clk_pin = spi_clk_pin;
     _spi_latch_pin = spi_latch_pin;
     _gclk_pin = gclk_pin;
     _spi_out_pin = spi_out_pin;
-    _spi_out2_pin = spi_out2_pin;
 
     gpio_output_init(_spi_out_pin);
-    if (_spi_out2_pin != 255) gpio_output_init(_spi_out2_pin);
     gpio_output_init(_spi_clk_pin);
     gpio_output_init(_spi_latch_pin);
 
@@ -31,7 +29,6 @@ void MBI5043::spi_init(uint8_t delay_us)
     _spi_delay_us = delay_us;
 
     gpio_output_clear(_spi_out_pin);
-    if (_spi_out2_pin != 255) gpio_output_clear(_spi_out2_pin);
     gpio_output_clear(_spi_clk_pin);
     gpio_output_clear(_spi_latch_pin);
 }
@@ -89,29 +86,27 @@ void MBI5043::pulse_spi_clk()
     if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us);
 }
 
-void MBI5043::write_dual_data(bool bit1, bool bit2)
+void MBI5043::write_data(bool bit)
 {
-    if (bit1) gpio_output_set(_spi_out_pin); else gpio_output_clear(_spi_out_pin);
-    if (_spi_out2_pin != 255)
-        if (bit2) gpio_output_set(_spi_out2_pin); else gpio_output_clear(_spi_out2_pin);
+    if (bit) gpio_output_set(_spi_out_pin); else gpio_output_clear(_spi_out_pin);
 
     if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us/2);
 }
 
-void MBI5043::update(uint8_t num_chips, uint16_t* pwm_data1, uint16_t* pwm_data2)
+void MBI5043::update(uint8_t num_chips, uint16_t* pwm_data)
 {
-    if (!pwm_data1 || num_chips == 0) return;
+    if (!pwm_data || num_chips == 0) return;
 
     gpio_output_clear(_spi_latch_pin);
     uint8_t count = 0;
 
     for (int scan = 0; scan < 16; scan++) {
         for (uint8_t chip = 0; chip < num_chips; chip++) {
-            uint16_t val1 = pwm_data1[count * num_chips + chip];
-            uint16_t val2 = pwm_data2 ? pwm_data2[count * num_chips + chip] : 0;
+            uint16_t val = pwm_data[count * num_chips + chip];
+
 
             for (int8_t bit = 15; bit >= 0; bit--) {
-                write_dual_data((val1 >> bit) & 1, (val2 >> bit) & 1);
+                write_data((val >> bit) & 1);
                 pulse_spi_clk();
             }
         }
@@ -124,8 +119,9 @@ void MBI5043::update(uint8_t num_chips, uint16_t* pwm_data1, uint16_t* pwm_data2
 
     gpio_output_set(_spi_latch_pin);
     if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us);
-    write_dual_data(0, 0); pulse_spi_clk();
-    write_dual_data(0, 0); pulse_spi_clk();
+    write_data(0); 
+    pulse_spi_clk();
+    pulse_spi_clk();
     gpio_output_clear(_spi_latch_pin);
 }
 

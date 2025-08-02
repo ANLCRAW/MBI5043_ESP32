@@ -73,12 +73,12 @@ enum GCLK_Speed {
 
 class MBI5043 {
 public:
-    MBI5043(uint8_t spi_in_pin, uint8_t spi_clk_pin, uint8_t spi_latch_pin,
-            uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_out2_pin = 255); // default only one output
+    MBI5043(uint8_t spi_clk_pin, uint8_t spi_latch_pin,
+            uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_in_pin = 255); // default only one output
 
     void spi_init(uint8_t delay_us = 0); // default 0us
     void setupGCLK(GCLK_Speed speed);
-    void update(uint8_t num_chips, uint16_t* pwm_data1, uint16_t* pwm_data2 = 0);// default only one output
+    void update(uint8_t num_chips, uint16_t* pwm_data1);// default only one output
     void write_config(uint16_t config_data, uint8_t stripPinNr, uint8_t num_chips);
     uint16_t get_preloaded_config();
     uint16_t read_config();
@@ -88,7 +88,6 @@ private:
     uint8_t _spi_clk_pin;
     uint8_t _spi_latch_pin;
     uint8_t _spi_out_pin;
-    uint8_t _spi_out2_pin;
     uint8_t _gclk_pin;
 
     uint8_t _spi_delay_us;
@@ -101,7 +100,7 @@ private:
     void gpio_output_clear(uint8_t pin);
     void gpio_output_init(uint8_t pin);
     void pulse_spi_clk();
-    void write_dual_data(bool bit1, bool bit2);
+    void write_data(bool bit1);
     
     void prepare_config_read();
     void prepare_config_write();
