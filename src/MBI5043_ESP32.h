@@ -73,15 +73,15 @@ enum GCLK_Speed {
 
 class MBI5043 {
 public:
-    MBI5043(uint8_t spi_clk_pin, uint8_t spi_clk_pin2, uint8_t spi_latch_pin,
-            uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_out_pin2, uint8_t spi_in_pin = 255); // default only one output
+    MBI5043(uint8_t spi_clk_pin, uint8_t spi_latch_pin,
+            uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_in_pin = 255); // default only one output
 
-    void spi_init(int delay_ns); // num cpu cicles
+    void spi_init(uint8_t delay_us = 0); // default 0us
     void setupGCLK(GCLK_Speed speed);
-    void update(uint8_t num_chips, uint16_t* pwm_data1, uint16_t* pwm_data2);// default only one output
-    void write_config(uint16_t config_data, uint8_t stripPinNr, uint8_t num_chips, uint8_t clr_pin);
+    void update(uint8_t num_chips, uint16_t* pwm_data1);// default only one output
+    void write_config(uint16_t config_data, uint8_t stripPinNr, uint8_t num_chips);
     uint16_t get_preloaded_config();
-    uint16_t read_config(uint8_t _clk_pin);
+    uint16_t read_config();
 
 private:
     uint8_t _spi_in_pin;
@@ -90,25 +90,24 @@ private:
     uint8_t _spi_out_pin;
     uint8_t _gclk_pin;
 
-    uint8_t _spi_clk_pin2;
-    uint8_t _spi_out_pin2;
-
-    uint8_t _spi_delay_nops;
+    uint8_t _spi_delay_us;
 
     uint16_t _config_data;
     uint8_t _stripPinNr;
     uint8_t _num_chips;
-
+    
+    inline void tiny_delay_inline();
+    inline void toggleClockAndData(bool data, uint32_t dataMask, uint32_t clkMask);
     void gpio_output_set(uint8_t pin);
     void gpio_output_clear(uint8_t pin);
     void gpio_output_init(uint8_t pin);
-    void pulse_spi_clk(uint8_t clk_pin);
-    void write_data(bool bit1, uint8_t out_pin);
-
-    void prepare_config_read(uint8_t clk_pin);
-    void prepare_config_write(uint8_t clk_pin);
-    uint16_t read_register(uint8_t clk_pin);
-    void write_register(uint8_t clk_pin);
+    void pulse_spi_clk();
+    void write_data(bool bit1);
+    
+    void prepare_config_read();
+    void prepare_config_write();
+    uint16_t read_register();
+    void write_register();
 };
 
 #endif // MBI5043_ESP32_H
