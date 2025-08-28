@@ -5,7 +5,7 @@ Developed for high-performance LED control on ESP32 platforms, this library simp
 
 ---
 
-## ✨ Features
+## Features
 - Control multiple MBI5043 LED driver chips over SPI  
 - Configurable output brightness, PWM, and channel updates  
 - Designed for ESP32 environment with compatibility for Arduino and PlatformIO  
@@ -13,7 +13,7 @@ Developed for high-performance LED control on ESP32 platforms, this library simp
 
 ---
 
-## 📦 Installation
+## Installation
 ### Arduino IDE
 1. Download the latest release as a `.zip` from the [releases page](https://github.com/ANLCRAW/MBI5043_ESP32/releases).  
 2. In Arduino IDE:  
@@ -24,10 +24,10 @@ Developed for high-performance LED control on ESP32 platforms, this library simp
 Add the following line to your `platformio.ini` under the `[env:your_env]` section:
 
 ```ini
-lib_deps = anlcraw/MBI5043_ESP32@^1.1.1
+lib_deps = anlcraw/MBI5043_ESP32@^1.1.2
 ```
 
-## 🔌 Hardware Wiring
+## Hardware Wiring
 The MBI5043 communicates via SPI. Below is a typical wiring example between the ESP32 and a single MBI5043 chip:
 
 | ESP32 Pin | MBI5043 Pin | Description                |
@@ -44,16 +44,16 @@ The MBI5043 communicates via SPI. Below is a typical wiring example between the 
 - Connect all SDO (Serial Data Out) of one chip to the SDI of the next (daisy-chaining).
 - Share CLK, LE, and OE across all chips.
 
-⚠️ **Note:** Ensure your LED power supply is sized properly. The ESP32’s 3.3V logic is sufficient for the MBI5043 input pins, but the LED outputs require an external supply (typically 5V, 12V or 24V).
+**Note:** Ensure your LED power supply is sized properly. The ESP32’s 3.3V logic is sufficient for the MBI5043 input pins, but the LED outputs require an external supply (typically 5V, 12V or 24V).
 
-## 📂 Examples
+## Examples
 **Check the examples/ directory for practical demos, including:**
 - Driver initialization
 - Multi-chip configuration
 - Dynamic LED updates
 - Basic animations and color patterns
 
-## 📖 API Overview
+## API Overview
 | Method                         | Description                                     |
 | ------------------------------ | ----------------------------------------------- |
 | `begin()`                      | Initialize the MBI5043 driver and SPI interface |
@@ -61,18 +61,18 @@ The MBI5043 communicates via SPI. Below is a typical wiring example between the 
 | `update()`                     | Write buffered values to the hardware           |
 | `reset()`                      | Send clear/reset command to all channels        |
 
-## 📝 To-Do
+## To-Do
 - Add more comprehensive documentation & usage guides
 - Add calibration utilities
 - Provide more stability
 - Provide ESP-IDF (non-Arduino) compatibility
  
-## 📄 License
+## License
 
 This project is released under the BSD-3-Clause License.
 See [LICENSE](https://github.com/ANLCRAW/MBI5043_ESP32/edit/main/LICENSE) for details.
 
-## 🤝 Contributing
+## Contributing
 Contributions, bug reports, and feature requests are welcome!
 Open an [issue](https://github.com/ANLCRAW/MBI5043_ESP32/issues) to report bugs or request features.
 Submit a [pull request](https://github.com/ANLCRAW/MBI5043_ESP32/pulls) with improvements.

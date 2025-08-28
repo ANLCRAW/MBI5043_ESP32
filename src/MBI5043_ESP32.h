@@ -95,7 +95,9 @@ private:
     uint16_t _config_data;
     uint8_t _stripPinNr;
     uint8_t _num_chips;
-
+    
+    inline void tiny_delay_inline();
+    inline void toggleClockAndData(bool data, uint32_t dataMask, uint32_t clkMask);
     void gpio_output_set(uint8_t pin);
     void gpio_output_clear(uint8_t pin);
     void gpio_output_init(uint8_t pin);

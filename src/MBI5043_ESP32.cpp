@@ -5,6 +5,8 @@
 #include "driver/gpio.h"
 #include "esp32/rom/gpio.h"
 
+#define MBI5043_USE_STRICT_GL 1
+
 MBI5043::MBI5043(uint8_t spi_clk_pin, uint8_t spi_latch_pin,
                  uint8_t gclk_pin, uint8_t spi_out_pin, uint8_t spi_in_pin)
 {
@@ -93,38 +95,97 @@ void MBI5043::write_data(bool bit)
     if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us/2);
 }
 
-void MBI5043::update(uint8_t num_chips, uint16_t* pwm_data)
-{
+inline void MBI5043::tiny_delay_inline() {
+    if (_spi_delay_us) {
+        // real wait if user asked for it
+        delayMicroseconds(_spi_delay_us);
+    } else {
+        // just satisfy SDI setup/hold before DCLK↑ (a few ns) :contentReference[oaicite:3]{index=3}
+        //asm volatile("nop");
+    }
+}
+
+inline void MBI5043::toggleClockAndData(bool data, uint32_t dataMask, uint32_t clkMask) {
+    // Set data line and clock HIGH in one go
+    GPIO.out_w1ts = data ? dataMask : 0;
+    GPIO.out_w1tc = data ? 0 : dataMask;
+    asm volatile("nop");
+    // Clear data and clock in one go
+    GPIO.out_w1ts = clkMask;
+    asm volatile("nop");
+    GPIO.out_w1tc = clkMask;
+    asm volatile("nop");
+    
+}
+
+void MBI5043::update(uint8_t num_chips, uint16_t* pwm_data) {
     if (!pwm_data || num_chips == 0) return;
 
-    gpio_output_clear(_spi_latch_pin);
+    // ---- precompute masks and banks (fast and branch-predictable) ----
+    const bool data_hi = (_spi_out_pin   >= 32);
+    const bool clk_hi  = (_spi_clk_pin   >= 32);
+    const bool le_hi   = (_spi_latch_pin >= 32);
+
+    const uint32_t data_m_lo = data_hi ? 0 : (1UL << _spi_out_pin);
+    const uint32_t data_m_hi = data_hi ? (1UL << (_spi_out_pin   - 32)) : 0;
+
+    const uint32_t clk_m_lo  = clk_hi  ? 0 : (1UL << _spi_clk_pin);
+    const uint32_t clk_m_hi  = clk_hi  ? (1UL << (_spi_clk_pin   - 32)) : 0;
+
+    const uint32_t le_m_lo   = le_hi   ? 0 : (1UL << _spi_latch_pin);
+    const uint32_t le_m_hi   = le_hi   ? (1UL << (_spi_latch_pin - 32)) : 0;
+
+    auto data_set  = [&](){ if (data_hi) GPIO.out1_w1ts.val = data_m_hi; else GPIO.out_w1ts = data_m_lo; };
+    auto data_clr  = [&](){ if (data_hi) GPIO.out1_w1tc.val = data_m_hi; else GPIO.out_w1tc = data_m_lo; };
+    auto clk_set   = [&](){ if (clk_hi)  GPIO.out1_w1ts.val = clk_m_hi;  else GPIO.out_w1ts = clk_m_lo;  };
+    auto clk_clr   = [&](){ if (clk_hi)  GPIO.out1_w1tc.val = clk_m_hi;  else GPIO.out_w1tc = clk_m_lo;  };
+    auto le_set    = [&](){ if (le_hi)   GPIO.out1_w1ts.val = le_m_hi;   else GPIO.out_w1ts = le_m_lo;   };
+    auto le_clr    = [&](){ if (le_hi)   GPIO.out1_w1tc.val = le_m_hi;   else GPIO.out_w1tc = le_m_lo;   };
+
+    auto dclk_pulse = [&](){
+        clk_set();
+        tiny_delay_inline();
+        clk_clr();
+        //tiny_delay_inline();
+    };
+
+    // ---- sequence identical to your working code ----
+    le_clr(); // LE low
+
     uint8_t count = 0;
-
-    for (int scan = 0; scan < 16; scan++) {
-        for (uint8_t chip = 0; chip < num_chips; chip++) {
-            uint16_t val = pwm_data[count * num_chips + chip];
-
-
-            for (int8_t bit = 15; bit >= 0; bit--) {
-                write_data((val >> bit) & 1);
-                pulse_spi_clk();
+    for (int scan = 0; scan < 16; ++scan) {
+        for (uint8_t chip = 0; chip < num_chips; ++chip) {
+            uint16_t val = pwm_data[count * num_chips + chip]; // same indexing you used
+            for (int8_t bit = 15; bit >= 0; --bit) {
+                if (val & (1 << bit)) data_set(); else data_clr();
+                // SDI valid before DCLK rising edge
+                dclk_pulse();
             }
         }
 
-        gpio_output_set(_spi_latch_pin);
-        pulse_spi_clk();
-        gpio_output_clear(_spi_latch_pin);
-        count++;
+        // Per-scan "data latch": LE high for 1 DCLK rising
+        le_set();
+        dclk_pulse();      // 1 rising while LE=H => Data Latch
+        le_clr();
+
+        ++count;
     }
 
-    gpio_output_set(_spi_latch_pin);
-    if (_spi_delay_us > 0) delayMicroseconds(_spi_delay_us);
-    write_data(0); 
-    pulse_spi_clk();
-    pulse_spi_clk();
-    gpio_output_clear(_spi_latch_pin);
+    // Final global action: keep your legacy 2 clocks, or select datasheet-3 clocks
+    le_set();
+    data_clr();          // you had write_data(0) here; keep it
+#if MBI5043_USE_STRICT_GL
+    dclk_pulse();        // 3 rising -> Global Latch (datasheet)
+    dclk_pulse();
+    //dclk_pulse();
+    clk_set();
+#else
+    dclk_pulse();        // your legacy “2 clocks” end sequence
+    dclk_pulse();
+#endif
+    clk_clr();
+    le_clr();
 }
-
 
 void MBI5043::write_register()
 {
